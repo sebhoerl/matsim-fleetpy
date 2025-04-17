@@ -1,5 +1,9 @@
 import zmq, json
 
+"""
+Random assignment dispatcher for MATSim
+"""
+
 # start ZMQ
 context = zmq.Context()
 
