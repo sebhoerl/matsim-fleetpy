@@ -2,6 +2,8 @@ package org.irtx.matsim_fleetpy;
 
 import java.io.IOException;
 
+import org.irtx.matsim_fleetpy.bridge.FleetPyModule;
+import org.irtx.matsim_fleetpy.bridge.FleetPyQSimModule;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.contrib.common.zones.systems.grid.square.SquareGridZoneSystemParams;
 import org.matsim.contrib.drt.optimizer.constraints.DefaultDrtOptimizationConstraintsSet;
@@ -20,6 +22,7 @@ import org.matsim.core.config.CommandLine;
 import org.matsim.core.config.CommandLine.ConfigurationException;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
+import org.matsim.core.config.groups.QSimConfigGroup.EndtimeInterpretation;
 import org.matsim.core.config.groups.QSimConfigGroup.StarttimeInterpretation;
 import org.matsim.core.config.groups.ScoringConfigGroup.ActivityParams;
 import org.matsim.core.config.groups.ScoringConfigGroup.ModeParams;
@@ -35,7 +38,7 @@ public class RunSimulation {
 			IOException, InterruptedException {
 		CommandLine cmd = new CommandLine.Builder(args) //
 				.requireOptions("demand-path", "fleet-path", "network-path", "output-path") //
-				.allowOptions("threads") //
+				.allowOptions("threads", "remote-port") //
 				.build();
 
 		Config config = ConfigUtils.createConfig(new MultiModeDrtConfigGroup(),
@@ -51,6 +54,8 @@ public class RunSimulation {
 		config.qsim().setFlowCapFactor(1e9);
 		config.qsim().setStorageCapFactor(1e9);
 		config.qsim().setSimStarttimeInterpretation(StarttimeInterpretation.onlyUseStarttime);
+		config.qsim().setEndTime(24.0 * 3600.0);
+		config.qsim().setSimEndtimeInterpretation(EndtimeInterpretation.onlyUseEndtime);
 
 		int threads = cmd.getOption("threads").map(Integer::parseInt)
 				.orElse(Runtime.getRuntime().availableProcessors());
@@ -104,6 +109,12 @@ public class RunSimulation {
 		controller.addOverridingModule(new DvrpModule());
 		controller.addOverridingModule(new MultiModeDrtModule());
 		controller.configureQSimComponents(DvrpQSimComponents.activateAllModes(MultiModeDrtConfigGroup.get(config)));
+
+		if (cmd.hasOption("remote-port")) {
+			int remotePort = Integer.parseInt(cmd.getOptionStrict("remote-port"));
+			controller.addOverridingModule(new FleetPyModule("drt", remotePort));
+			controller.addOverridingQSimModule(new FleetPyQSimModule("drt"));
+		}
 
 		controller.run();
 	}
