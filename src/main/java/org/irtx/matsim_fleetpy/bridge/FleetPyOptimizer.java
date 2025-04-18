@@ -32,6 +32,7 @@ import org.matsim.contrib.dvrp.path.VrpPathWithTravelData;
 import org.matsim.contrib.dvrp.path.VrpPaths;
 import org.matsim.contrib.dvrp.schedule.DriveTask;
 import org.matsim.contrib.dvrp.schedule.Schedule;
+import org.matsim.contrib.dvrp.schedule.Schedule.ScheduleStatus;
 import org.matsim.contrib.dvrp.schedule.ScheduleTimingUpdater;
 import org.matsim.contrib.dvrp.schedule.Schedules;
 import org.matsim.contrib.dvrp.schedule.StayTask;
@@ -58,6 +59,7 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
     private final String mode;
 
     private boolean initialized = false;
+    private boolean isFirstStep = true;
 
     public FleetPyOptimizer(CommunicationManager communicationManager, ScheduleTimingUpdater scheduleTimingUpdater,
             Fleet fleet, Network network, DrtTaskFactory taskFactory, TravelTime travelTime,
@@ -75,8 +77,12 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
 
     @Override
     public void notifyMobsimBeforeSimStep(@SuppressWarnings("rawtypes") MobsimBeforeSimStepEvent e) {
-        Assignment assignment = update(e.getSimulationTime());
-        implement(assignment, e.getSimulationTime());
+        if (!isFirstStep) {
+            Assignment assignment = update(e.getSimulationTime());
+            implement(assignment, e.getSimulationTime());
+        } else {
+            isFirstStep = false;
+        }
     }
 
     private List<Request> submitted = new LinkedList<>();
@@ -116,35 +122,42 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
                 vehicleState.id = vehicle.getId().toString();
                 state.vehicles.add(vehicleState);
 
-                Task currentTask = vehicle.getSchedule().getCurrentTask();
-                if (DrtTaskBaseType.STAY.isBaseTypeOf(currentTask)) {
-                    vehicleState.state = "stay";
+                if (vehicle.getSchedule().getStatus().equals(ScheduleStatus.STARTED)) {
+                    Task currentTask = vehicle.getSchedule().getCurrentTask();
+                    if (DrtTaskBaseType.STAY.isBaseTypeOf(currentTask)) {
+                        vehicleState.state = "stay";
 
-                    StayTask stayTask = (StayTask) currentTask;
-                    vehicleState.currentLink = stayTask.getLink().getId().toString();
-                    vehicleState.currentExitTime = stayTask.getEndTime();
-                } else if (DrtTaskBaseType.STOP.isBaseTypeOf(currentTask)) {
-                    vehicleState.state = "stop";
+                        StayTask stayTask = (StayTask) currentTask;
+                        vehicleState.currentLink = stayTask.getLink().getId().toString();
+                        vehicleState.currentExitTime = stayTask.getEndTime();
+                    } else if (DrtTaskBaseType.STOP.isBaseTypeOf(currentTask)) {
+                        vehicleState.state = "stop";
 
-                    DrtStopTask stopTask = (DrtStopTask) currentTask;
-                    vehicleState.currentLink = stopTask.getLink().getId().toString();
-                    vehicleState.currentExitTime = stopTask.getEndTime();
-                } else if (DrtTaskBaseType.DRIVE.isBaseTypeOf(currentTask)) {
-                    vehicleState.state = "drive";
+                        DrtStopTask stopTask = (DrtStopTask) currentTask;
+                        vehicleState.currentLink = stopTask.getLink().getId().toString();
+                        vehicleState.currentExitTime = stopTask.getEndTime();
+                    } else if (DrtTaskBaseType.DRIVE.isBaseTypeOf(currentTask)) {
+                        vehicleState.state = "drive";
 
-                    DriveTask driveTask = (DriveTask) currentTask;
-                    OnlineDriveTaskTracker tracker = (OnlineDriveTaskTracker) driveTask.getTaskTracker();
+                        DriveTask driveTask = (DriveTask) currentTask;
+                        OnlineDriveTaskTracker tracker = (OnlineDriveTaskTracker) driveTask.getTaskTracker();
 
-                    VrpPath path = tracker.getPath();
-                    vehicleState.currentLink = path.getLink(tracker.getCurrentLinkIdx()).getId().toString();
+                        VrpPath path = tracker.getPath();
+                        vehicleState.currentLink = path.getLink(tracker.getCurrentLinkIdx()).getId().toString();
 
-                    vehicleState.currentExitTime = tracker.getCurrentLinkEnterTime();
-                    vehicleState.currentExitTime += path.getLinkTravelTime(tracker.getCurrentLinkIdx());
+                        vehicleState.currentExitTime = tracker.getCurrentLinkEnterTime();
+                        vehicleState.currentExitTime += path.getLinkTravelTime(tracker.getCurrentLinkIdx());
 
-                    vehicleState.divergeLink = tracker.getDiversionPoint().link.getId().toString();
-                    vehicleState.divergeTime = tracker.getDiversionPoint().time;
+                        vehicleState.divergeLink = tracker.getDiversionPoint().link.getId().toString();
+                        vehicleState.divergeTime = tracker.getDiversionPoint().time;
+                    } else {
+                        throw new IllegalStateException();
+                    }
                 } else {
-                    throw new IllegalStateException();
+                    StayTask stayTask = (StayTask) Schedules.getLastTask(vehicle.getSchedule());
+                    vehicleState.state = "stay";
+                    vehicleState.currentLink = stayTask.getLink().getId().toString();
+                    vehicleState.currentExitTime = Double.POSITIVE_INFINITY;
                 }
             }
 

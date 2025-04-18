@@ -41,7 +41,7 @@ To perform dispatching using the remote interface, start the simulation has desc
 --remote-port 9001
 ```
 
-This will make MATSim listen on that port for the remote dispatcher. Communication is performed using the *ZeroMQ* library that is available in various languages. An example dispatcher is given in `example/random.py`. What it does is the following:
+This will make MATSim listen on that port for the remote dispatcher. Communication is performed using the *ZeroMQ* library that is available in various languages. An example dispatcher is given in `example/random_dispatcher.py`. What it does is the following:
 
 - It connects to MATSim on the port that is written in the script using *ZMQ*.
 - It gives an initial ping to MATSim.
@@ -55,6 +55,19 @@ In every subsequent step the script answsers with an *assignment* message (the f
 - As soon as the *state* indicates that a dropoff happened, the vehicle is added back tp the list of available vehicles.
 
 In essence, this is a completely random unit capacity dispatcher that always matches randomly one vehicle with one request. As soon as the request is dropped off, another one can be assigned.
+
+## More complex example
+
+The script in `example/euclidean_dispatcher.py` provides a slightly more complex dispatcher:
+
+- Every `N` (default 30) seconds, we search for all vehicles that are not currently carrying a passenger (or are stopping to pick up one up) and for all requests that are not currently onboard of (or currently entering) a vehicle. We call those the *assignable* vehicles.
+- The script loads the network file to obtain Euclidean coordinates for each link. We obtain the origin coordinates of all assignable requests and the current position coordinates of all assignable vehicles.
+- We set up a Euclidean distance matrix between all requests and vehicles.
+- We then iteratively find the request-vehicle pair with the shortest distance by erasing the request / vehicle of the currently shortest pair from the distance matrix until no more assignable requests or vehicles are left.
+- The obtain matchings are communicated to MATSim.
+- In summary, we perform a best-response Euclidean distance matching.
+
+**Bipartite matching**: Altenratively, you can set `algorithm = "bipartite-matching"` on top of the script. In that case, `scipy.optimize.linear_sum_assignment` will be used to solve a Global Bipartite Matching (GBM) problem that minimizes the sum of distances in each decision step (instead of the best resposne assignment).
 
 ## Communication interface
 
