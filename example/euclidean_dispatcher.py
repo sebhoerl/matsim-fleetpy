@@ -8,9 +8,11 @@ import scipy.optimize as sopt
 Euclidean bipartite matching dispatcher for MATSim
 """
 
+# Some settings
 interval = 30
 algorithm = "best-response" # bipartite-matching
 
+# Load the network to obtain link coordinates
 class NetworkHandler(xml.sax.ContentHandler):
     def __init__(self):
         self.node_coordinates = {}

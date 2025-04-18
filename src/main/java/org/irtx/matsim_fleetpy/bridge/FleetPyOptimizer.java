@@ -29,6 +29,7 @@ import org.matsim.contrib.dvrp.passenger.PassengerPickedUpEventHandler;
 import org.matsim.contrib.dvrp.passenger.PassengerRequestScheduledEvent;
 import org.matsim.contrib.dvrp.path.VrpPath;
 import org.matsim.contrib.dvrp.path.VrpPathWithTravelData;
+import org.matsim.contrib.dvrp.path.VrpPathWithTravelDataImpl;
 import org.matsim.contrib.dvrp.path.VrpPaths;
 import org.matsim.contrib.dvrp.schedule.DriveTask;
 import org.matsim.contrib.dvrp.schedule.Schedule;
@@ -130,12 +131,18 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
                         StayTask stayTask = (StayTask) currentTask;
                         vehicleState.currentLink = stayTask.getLink().getId().toString();
                         vehicleState.currentExitTime = stayTask.getEndTime();
+
+                        vehicleState.divergeLink = vehicleState.currentLink;
+                        vehicleState.divergeTime = time;
                     } else if (DrtTaskBaseType.STOP.isBaseTypeOf(currentTask)) {
                         vehicleState.state = "stop";
 
                         DrtStopTask stopTask = (DrtStopTask) currentTask;
                         vehicleState.currentLink = stopTask.getLink().getId().toString();
                         vehicleState.currentExitTime = stopTask.getEndTime();
+
+                        vehicleState.divergeLink = vehicleState.currentLink;
+                        vehicleState.divergeTime = vehicleState.currentExitTime;
                     } else if (DrtTaskBaseType.DRIVE.isBaseTypeOf(currentTask)) {
                         vehicleState.state = "drive";
 
@@ -283,7 +290,7 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
                             path = VrpPaths.calcAndCreatePathForDiversion(tracker.getDiversionPoint(), stopLink, router,
                                     travelTime);
                         } else {
-                            throw new IllegalStateException("TODO");
+                            path = createPath(stop.route, tracker.getDiversionPoint().time);
                         }
 
                         tracker.divertPath(path);
@@ -294,7 +301,7 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
                             path = VrpPaths.calcAndCreatePath(stayTask.getLink(), stopLink, currentTask.getEndTime(),
                                     router, travelTime);
                         } else {
-                            throw new IllegalStateException("TODO");
+                            path = createPath(stop.route, stayTask.getEndTime());
                         }
 
                         DriveTask driveTask = taskFactory.createDriveTask(vehicle, path, DrtDriveTask.TYPE);
@@ -426,5 +433,24 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
                         request.getPassengerIds(), entry.pickupVehicleId, pickupTime, dropoffTime));
             }
         }
+    }
+
+    private VrpPathWithTravelData createPath(List<String> rawRoute, double departureTime) {
+        double routeTravelTime = 0.0;
+        double enterTime = departureTime;
+
+        Link[] links = new Link[rawRoute.size()];
+        double[] travelTimes = new double[rawRoute.size()];
+
+        for (int k = 0; k < rawRoute.size(); k++) {
+            Link link = network.getLinks().get(Id.createLinkId(rawRoute.get(k)));
+            links[k] = link;
+            travelTimes[k] = travelTime.getLinkTravelTime(link, enterTime, null, null);
+            routeTravelTime += travelTimes[k];
+            enterTime += travelTimes[k];
+        }
+
+        return new VrpPathWithTravelDataImpl(departureTime, routeTravelTime, links,
+                travelTimes);
     }
 }

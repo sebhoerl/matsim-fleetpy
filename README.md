@@ -69,6 +69,14 @@ The script in `example/euclidean_dispatcher.py` provides a slightly more complex
 
 **Bipartite matching**: Altenratively, you can set `algorithm = "bipartite-matching"` on top of the script. In that case, `scipy.optimize.linear_sum_assignment` will be used to solve a Global Bipartite Matching (GBM) problem that minimizes the sum of distances in each decision step (instead of the best resposne assignment).
 
+## Roaming dispatcher using networkx
+
+In `example/roaming_dispatcher.py` a dispatcher is presented that lets vehicles roam in the network. The example is especially useful as it shows how to perform routing on the dispatcher side instead of letting MATSim perform automatic routing (see below).
+
+The dispatcher first loads the network as a `networkx` network and then reroutes vehicles in regular intervals. This causes direct routes (from an idle location) and diversions (changing the path of a moving vehicle).
+
+If, by chance, a vehicle and a waiting request are on the same link, the vehicle will pick up the customer and perform the trip.
+
 ## Communication interface
 
 - Initialization: first message sent to MATSim to open the conversation
@@ -124,7 +132,7 @@ At the beginning of each iteration, the initial state of all vehicles is transmi
 
 The assignment is a list of vehicles that are *updated* (all vehicles that are not mentioned follow their previously defined schedule). For the updated vehicles, a sequence of stops is given. Those stops can be pickup/dropoff stops (if a list of respective request identifiers is given) or simply cause relocation of the vehicle. Pickup/Dropoff stops *can* have an `earliestStartTime` (for prebooked requests), but *must* have a duration. 
 
-For each stop a sequence of links *can* be given such that the vehicle will follow that route (NOT IMPLEMENTED YET). If no route is given, MATSim will calculate the shortest path *automatically*.
+For each stop a sequence of links *can* be given such that the vehicle will follow that route. Note that the route needs to start with the link that is given as the `divergeLink`. If no route is given, MATSim will calculate the shortest path *automatically*. 
 
 - State: The assignment is answered by a *State* after the next simulation step has been performed:
 
