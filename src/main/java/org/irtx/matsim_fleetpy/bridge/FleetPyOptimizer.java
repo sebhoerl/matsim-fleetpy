@@ -46,6 +46,7 @@ import org.matsim.core.router.util.LeastCostPathCalculator;
 import org.matsim.core.router.util.TravelTime;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Verify;
 
 public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHandler, PassengerDroppedOffEventHandler,
         MobsimScopeEventHandler {
@@ -161,10 +162,22 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
                         throw new IllegalStateException();
                     }
                 } else {
-                    StayTask stayTask = (StayTask) Schedules.getLastTask(vehicle.getSchedule());
-                    vehicleState.state = "stay";
-                    vehicleState.currentLink = stayTask.getLink().getId().toString();
-                    vehicleState.currentExitTime = Double.POSITIVE_INFINITY;
+                    Task lastTask = Schedules.getLastTask(vehicle.getSchedule());
+
+                    if (lastTask instanceof StayTask stayTask) {
+                        vehicleState.state = "inactive";
+                        vehicleState.currentLink = stayTask.getLink().getId().toString();
+                        vehicleState.currentExitTime = Double.POSITIVE_INFINITY;
+                        vehicleState.divergeLink = vehicleState.currentLink;
+                        vehicleState.divergeTime = Double.POSITIVE_INFINITY;
+                    } else {
+                        DriveTask driveTask = (DriveTask) lastTask;
+                        vehicleState.state = "inactive";
+                        vehicleState.currentLink = driveTask.getPath().getToLink().getId().toString();
+                        vehicleState.currentExitTime = Double.POSITIVE_INFINITY;
+                        vehicleState.divergeLink = vehicleState.currentLink;
+                        vehicleState.divergeTime = Double.POSITIVE_INFINITY;
+                    }
                 }
             }
 
@@ -243,6 +256,9 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
             DvrpVehicle vehicle = fleet.getVehicles().get(Id.create(vehicleId, DvrpVehicle.class));
             Schedule schedule = vehicle.getSchedule();
             Task currentTask = schedule.getCurrentTask();
+
+            Verify.verify(schedule.getStatus().equals(ScheduleStatus.STARTED),
+                    "Sent instructions for inactive vehicle " + vehicleId);
 
             // book-keeping
             for (int i = currentTask.getTaskIdx(); i < schedule.getTaskCount(); i++) {

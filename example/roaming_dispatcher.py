@@ -70,6 +70,7 @@ while True:
             vehicle["location"] = vehicle["startLink"]
             vehicle["diversion"] = vehicle["startLink"]
             vehicle["assigned"] = False
+            vehicle["state"] = "inactive"
 
     # A new time step
     elif state["@message"] == "state":
@@ -95,6 +96,7 @@ while True:
         for vehicle in state["vehicles"]:
             vehicles[vehicle["id"]]["location"] = vehicle["currentLink"]
             vehicles[vehicle["id"]]["diversion"] = vehicle["divergeLink"]
+            vehicles[vehicle["id"]]["state"] = vehicle["state"]
 
     # end of the simulation
     if state["@message"] == "finalization":
@@ -104,7 +106,7 @@ while True:
     for vehicle in vehicles.values():
         for request in requests.values():
             # check that both are still assignable
-            if not request["assigned"] and not vehicle["assigned"]:
+            if not request["assigned"] and not vehicle["assigned"] and vehicle["state"] != "inactive":
                 if request["originLink"] == vehicle["location"]:
                     # we found a match
 
@@ -132,7 +134,7 @@ while True:
     if time % roaming_interval == 0:
         # loop through all vehicles that remain assignable and divert them
         for vehicle in vehicles.values():
-            if not vehicle["assigned"]:
+            if not vehicle["assigned"] and vehicle["state"] != "inactive":
                 candidates = list(network.links.values())
                 selection = candidates[random_state.randint(len(candidates))]
 
