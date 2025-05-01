@@ -19,4 +19,5 @@ public class Assignment extends AbstractMessage {
     }
 
     public Map<String, List<Stop>> stops = new HashMap<>();
+    public List<String> rejections = new LinkedList<>();
 }
