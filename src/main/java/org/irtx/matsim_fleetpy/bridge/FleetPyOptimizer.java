@@ -26,6 +26,7 @@ import org.matsim.contrib.dvrp.passenger.PassengerDroppedOffEvent;
 import org.matsim.contrib.dvrp.passenger.PassengerDroppedOffEventHandler;
 import org.matsim.contrib.dvrp.passenger.PassengerPickedUpEvent;
 import org.matsim.contrib.dvrp.passenger.PassengerPickedUpEventHandler;
+import org.matsim.contrib.dvrp.passenger.PassengerRequestRejectedEvent;
 import org.matsim.contrib.dvrp.passenger.PassengerRequestScheduledEvent;
 import org.matsim.contrib.dvrp.path.VrpPath;
 import org.matsim.contrib.dvrp.path.VrpPathWithTravelData;
@@ -261,7 +262,7 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
                     "Sent instructions for inactive vehicle " + vehicleId);
 
             // book-keeping
-            for (int i = currentTask.getTaskIdx(); i < schedule.getTaskCount(); i++) {
+            for (int i = currentTask.getTaskIdx() + 1; i < schedule.getTaskCount(); i++) {
                 Task task = schedule.getTasks().get(i);
 
                 if (task instanceof DrtStopTask stopTask) {
@@ -269,7 +270,7 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
                         requestEntries.get(requestId).pickupVehicleId = null;
                     }
 
-                    for (Id<Request> requestId : stopTask.getPickupRequests().keySet()) {
+                    for (Id<Request> requestId : stopTask.getDropoffRequests().keySet()) {
                         requestEntries.get(requestId).dropoffVehicleId = null;
                     }
                 }
@@ -283,6 +284,21 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
             if (currentTask instanceof DrtStayTask) {
                 currentTask.setEndTime(now);
             }
+        }
+
+        // next, rejections
+        for (String rawRequestId : assignment.rejections) {
+            Id<Request> requestId = Id.create(rawRequestId, Request.class);
+
+            Preconditions.checkState(requestEntries.get(requestId).pickupVehicleId == null,
+                    "Request " + requestId + " is rejected but it is still assigned to vehicle "
+                            + requestEntries.get(requestId).pickupVehicleId + " (onboard?)");
+
+            eventsManager.processEvent(new PassengerRequestRejectedEvent(now, mode, requestId,
+                    requests.get(requestId).getPassengerIds(), "external"));
+
+            requests.remove(requestId);
+            requestEntries.remove(requestId);
         }
 
         // next, reconstruct the schedules
@@ -345,6 +361,11 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
 
                         for (String pickupId : stop.pickup) {
                             AcceptedDrtRequest request = requests.get(Id.create(pickupId, Request.class));
+
+                            Preconditions.checkNotNull(request,
+                                    "Request " + pickupId + " is assdigned for pickup to vehicle " + vehicle.getId()
+                                            + " but does not exist anymore (rejeced? / done?)");
+
                             stopTask.addPickupRequest(request);
 
                             Preconditions.checkState(requestEntries.get(request.getId()).pickupVehicleId == null,
@@ -352,11 +373,17 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
                                             + vehicle.getId()
                                             + " but is already assigned to vehicle "
                                             + requestEntries.get(request.getId()).pickupVehicleId);
+
                             requestEntries.get(request.getId()).pickupVehicleId = vehicle.getId();
                         }
 
                         for (String dropoffId : stop.dropoff) {
                             AcceptedDrtRequest request = requests.get(Id.create(dropoffId, Request.class));
+
+                            Preconditions.checkNotNull(request,
+                                    "Request " + dropoffId + " is assdigned for pickup to vehicle " + vehicle.getId()
+                                            + " but does not exist anymore (dropped off?)");
+
                             stopTask.addDropoffRequest(request);
 
                             Preconditions.checkState(requestEntries.get(request.getId()).dropoffVehicleId == null,

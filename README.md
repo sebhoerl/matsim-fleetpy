@@ -77,6 +77,10 @@ The dispatcher first loads the network as a `networkx` network and then reroutes
 
 If, by chance, a vehicle and a waiting request are on the same link, the vehicle will pick up the customer and perform the trip.
 
+## Rejecting dispatcher
+
+In `example/rejecting_dispatcher.py` the Euclidean/Bipartite dispatcher from above is extended with rejections: If a request is still not picked up once the `latestPickupTime` is exceeded, it is rejected.
+
 ## Communication interface
 
 - Initialization: first message sent to MATSim to open the conversation
@@ -126,13 +130,18 @@ At the beginning of each iteration, the initial state of all vehicles is transmi
                 "route": ["123", "1252", "125", "55"]
             }
         ]
-    }
+    },
+    "rejections": [
+        "req5", "req3"
+    ]
 }
 ```
 
 The assignment is a list of vehicles that are *updated* (all vehicles that are not mentioned follow their previously defined schedule). For the updated vehicles, a sequence of stops is given. Those stops can be pickup/dropoff stops (if a list of respective request identifiers is given) or simply cause relocation of the vehicle. Pickup/Dropoff stops *can* have an `earliestStartTime` (for prebooked requests), but *must* have a duration. 
 
 For each stop a sequence of links *can* be given such that the vehicle will follow that route. Note that the route needs to start with the link that is given as the `divergeLink`. If no route is given, MATSim will calculate the shortest path *automatically*. 
+
+A list of rejected requests can be provided that are from that point on removed from the system.
 
 - State: The assignment is answered by a *State* after the next simulation step has been performed:
 
