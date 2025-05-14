@@ -81,6 +81,10 @@ If, by chance, a vehicle and a waiting request are on the same link, the vehicle
 
 In `example/rejecting_dispatcher.py` the Euclidean/Bipartite dispatcher from above is extended with rejections: If a request is still not picked up once the `latestPickupTime` is exceeded, it is rejected.
 
+## Q-learning dispatcher
+
+In `example/qlearning_dispatcher.py` a simple Q-learning algorithm is implemented for relocating the vehicles while the assignment of requests is performed using Bipartite matching (see above). The example spans a rectangular grid with configurable size and resulting `N` cells over the network. Furthermore, unassigned vehicles are moved to a new destination in `T` time steps (every 30min, for instance). The state space of the vehicles is, hence, `N x T`. In every decision step, the vehicles decide to go to any of the `N` zones, so the action space is of size `N`. The resulting Q matrix is `N x T x N`. Each time an unassigned vehicle is sent for relocation, the reward is tracked until the next decision epoch. The reward is represented by the number of picked up after having received the relocation instruction. All rewards are integrated using the [standard definition](https://en.wikipedia.org/wiki/Q-learning).
+
 ## Communication interface
 
 - Initialization: first message sent to MATSim to open the conversation
