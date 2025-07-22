@@ -9,6 +9,7 @@ Random roaming dispatcher for MATSim
 seed = 0
 roaming_interval = 300
 statistics_interval = 60
+travel_time_interval = 600
 
 # Initialize RNG
 random_state = np.random.RandomState(seed)
@@ -165,6 +166,22 @@ while True:
             statistics["assigned" if vehicle["assigned"] else "roaming"] += 1
 
         print(statistics)
+
+    if time % travel_time_interval == 0 and travel_time_interval > 0:
+        print("updating network travel times ...")
+        # request travel times and update network
+        travel_time_query = { "@message": "travel_time_query" }
+        socket.send(json.dumps(travel_time_query).encode())
+
+        travel_time_response = state = json.loads(socket.recv())
+        data = {}
+
+        for link, value in travel_time_response["travelTimes"].items():
+            u, v = network.from_node[link], network.to_node[link]
+            data[(u, v)] = { "travel_time": value }
+
+        nx.set_edge_attributes(network.graph, data)
+        print("  done.")
 
     # send the assignment to MATSim
     socket.send(json.dumps(assignment).encode())

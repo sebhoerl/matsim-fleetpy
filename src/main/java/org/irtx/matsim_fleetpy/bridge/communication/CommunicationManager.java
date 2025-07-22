@@ -6,12 +6,14 @@ import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.irtx.matsim_fleetpy.bridge.TravelTimeManager;
 import org.irtx.matsim_fleetpy.bridge.communication.messages.AbstractMessage;
 import org.irtx.matsim_fleetpy.bridge.communication.messages.Assignment;
 import org.irtx.matsim_fleetpy.bridge.communication.messages.Finalization;
 import org.irtx.matsim_fleetpy.bridge.communication.messages.Initialization;
 import org.irtx.matsim_fleetpy.bridge.communication.messages.Iteration;
 import org.irtx.matsim_fleetpy.bridge.communication.messages.State;
+import org.irtx.matsim_fleetpy.bridge.communication.messages.TravelTimeQuery;
 import org.matsim.core.controler.events.IterationStartsEvent;
 import org.matsim.core.controler.events.ShutdownEvent;
 import org.matsim.core.controler.events.StartupEvent;
@@ -38,8 +40,11 @@ public class CommunicationManager
     private int iteration;
     private boolean initialized = false;
 
-    public CommunicationManager(int port) {
+    private final TravelTimeManager travelTimeManager;
+
+    public CommunicationManager(int port, TravelTimeManager travelTimeManager) {
         this.port = port;
+        this.travelTimeManager = travelTimeManager;
     }
 
     @Override
@@ -83,8 +88,19 @@ public class CommunicationManager
             logger.info("Initializing iteration " + iteration + "...");
             socket.send(mapper.writeValueAsBytes(message));
 
-            logger.info("... waiting for response ...");
-            AbstractMessage response = mapper.readValue(socket.recv(), AbstractMessage.class);
+            AbstractMessage response;
+            while (true) {
+                logger.debug("... waiting for response ...");
+                response = mapper.readValue(socket.recv(), AbstractMessage.class);
+
+                if (response instanceof TravelTimeQuery query) {
+                    logger.debug("... handling travel time query ...");
+                    socket.send(mapper.writeValueAsBytes(travelTimeManager.query(query, 0.0)));
+                } else {
+                    break;
+                }
+            }
+
             Verify.verify(response instanceof Assignment);
 
             logger.info("OK!");
@@ -99,8 +115,19 @@ public class CommunicationManager
             logger.debug("Sending state at " + state.time + "...");
             socket.send(mapper.writeValueAsBytes(state));
 
-            logger.debug("... waiting for response ...");
-            AbstractMessage response = mapper.readValue(socket.recv(), AbstractMessage.class);
+            AbstractMessage response;
+            while (true) {
+                logger.debug("... waiting for response ...");
+                response = mapper.readValue(socket.recv(), AbstractMessage.class);
+
+                if (response instanceof TravelTimeQuery query) {
+                    logger.debug("... handling travel time query ...");
+                    socket.send(mapper.writeValueAsBytes(travelTimeManager.query(query, state.time)));
+                } else {
+                    break;
+                }
+            }
+
             Verify.verify(response instanceof Assignment);
 
             logger.debug("OK!");

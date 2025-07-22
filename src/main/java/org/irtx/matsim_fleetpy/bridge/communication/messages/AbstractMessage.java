@@ -13,6 +13,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
                 @Type(value = Iteration.class, name = "iteration"), //
                 @Type(value = Assignment.class, name = "assignment"), //
                 @Type(value = State.class, name = "state"), //
+                @Type(value = TravelTimeQuery.class, name = "travel_time_query"), //
+                @Type(value = TravelTimeResponse.class, name = "travel_time_response"), //
 })
 public class AbstractMessage {
 

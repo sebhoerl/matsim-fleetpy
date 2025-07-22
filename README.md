@@ -77,6 +77,8 @@ The dispatcher first loads the network as a `networkx` network and then reroutes
 
 If, by chance, a vehicle and a waiting request are on the same link, the vehicle will pick up the customer and perform the trip.
 
+Furthermore, the example shows how to make use of travel time estimates from MATSim. Optionally, the dispatcher will request updated traversal times for all links in the network in a fixed interval (`travel_time_interval`) and then use the updated travel times to calculate shortest paths.
+
 ## Rejecting dispatcher
 
 In `example/rejecting_dispatcher.py` the Euclidean/Bipartite dispatcher from above is extended with rejections: If a request is still not picked up once the `latestPickupTime` is exceeded, it is rejected.
@@ -186,5 +188,25 @@ First, a map of picked up and dropped off requests is given, including the vehic
 ```json
 {
     "@message": "finalization"
+}
+```
+
+- Travel time query: Current link travel time estimates in the network can be requested as follows:
+
+```json
+{
+    "@message": "travel_time_query",
+    "links": ["link1", "link2"]
+}
+```
+
+If an empty list is given, the travel times on *all* links of the network will be returned. If a list of link identifiers (as *str*) is given, only travel times for those links are returned.
+
+- Travel time response: This message is returned for a travel time query. It contains a map of the link id and the current estimate of the traversal time:
+
+```json
+{
+    "@message": "travel_time_response",
+    "travelTimes": { "link1": 54.25, "link2": 12.55 }
 }
 ```
