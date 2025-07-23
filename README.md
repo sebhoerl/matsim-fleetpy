@@ -140,7 +140,8 @@ At the beginning of each iteration, the initial state of all vehicles is transmi
     },
     "rejections": [
         "req5", "req3"
-    ]
+    ],
+    "waitFor": 0.0
 }
 ```
 
@@ -151,6 +152,8 @@ For each stop a sequence of links *can* be given such that the vehicle will foll
 A list of rejected requests can be provided that are from that point on removed from the system.
 
 Optionally, each instruction can be assigned an `id`. This way, it can be later tracked whether a defined instruction has been finished the next time the state is provided.
+
+The `waitFor` attribute defines how long the simulation should continue (in simulated seconds) until the next communication with the dispatcher should happen. The default indicates that communication happens immediately in the next time step.
 
 - State: The assignment is answered by a *State* after the next simulation step has been performed:
 
