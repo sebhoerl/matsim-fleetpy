@@ -21,6 +21,8 @@ public class State extends AbstractMessage {
         public double divergeTime = Double.NEGATIVE_INFINITY;
 
         public String state; // stay, stop, drive
+
+        public List<String> finished = new LinkedList<>();
     }
 
     public List<Vehicle> vehicles = new LinkedList<>();

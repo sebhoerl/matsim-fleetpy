@@ -122,7 +122,8 @@ At the beginning of each iteration, the initial state of all vehicles is transmi
                 "link": "123", 
                 "pickup": ["req1"], 
                 "earliestStartTime": 0.0, 
-                "stopDuration": 30.0 
+                "stopDuration": 30.0 ,
+                "id": "myid"
             },
             { 
                 "link": "5242", 
@@ -149,6 +150,8 @@ For each stop a sequence of links *can* be given such that the vehicle will foll
 
 A list of rejected requests can be provided that are from that point on removed from the system.
 
+Optionally, each instruction can be assigned an `id`. This way, it can be later tracked whether a defined instruction has been finished the next time the state is provided.
+
 - State: The assignment is answered by a *State* after the next simulation step has been performed:
 
 ```json
@@ -164,7 +167,8 @@ A list of rejected requests can be provided that are from that point on removed 
             "curentExitTime": 7201.0, 
             "divergeLink": "513", 
             "divergeTime": 7211.0, 
-            "state": "drive" 
+            "state": "drive",
+            "finished": []
         }
     ],
     "submitted": [
@@ -182,6 +186,8 @@ A list of rejected requests can be provided that are from that point on removed 
 ```
 
 First, a map of picked up and dropped off requests is given, including the vehicle that performed that action. Second, a list of vehicle states is given with their current location and the earliest point and time when the route of the vehicle can be diverted. Third, a list of *newly* submitted requests is given including their time constraints, origin, and destination.
+
+Each vehicle also indicates which stops have finished (driving there, ideling if necessary, performing the pickup/dropoff) in case identifiers have been defined for them.
 
 - Finalization: Once the simulation is over, MATSim will send this message:
 
