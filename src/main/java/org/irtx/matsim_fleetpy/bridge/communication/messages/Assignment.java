@@ -16,6 +16,8 @@ public class Assignment extends AbstractMessage {
 
         public double earliestStartTime = Double.NEGATIVE_INFINITY;
         public double stopDuration;
+
+        public String id = null;
     }
 
     public Map<String, List<Stop>> stops = new HashMap<>();

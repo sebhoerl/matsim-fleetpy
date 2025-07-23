@@ -1,7 +1,10 @@
 package org.irtx.matsim_fleetpy.bridge;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.irtx.matsim_fleetpy.bridge.communication.CommunicationManager;
 import org.irtx.matsim_fleetpy.bridge.communication.messages.Assignment;
@@ -39,6 +42,7 @@ import org.matsim.contrib.dvrp.schedule.ScheduleTimingUpdater;
 import org.matsim.contrib.dvrp.schedule.Schedules;
 import org.matsim.contrib.dvrp.schedule.StayTask;
 import org.matsim.contrib.dvrp.schedule.Task;
+import org.matsim.contrib.dvrp.schedule.Task.TaskStatus;
 import org.matsim.contrib.dvrp.tracker.OnlineDriveTaskTracker;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.events.MobsimScopeEventHandler;
@@ -180,6 +184,22 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
                         vehicleState.divergeTime = Double.POSITIVE_INFINITY;
                     }
                 }
+
+                Map<String, List<Task>> stopTracker = taskTrackers.getOrDefault(vehicle.getId(),
+                        Collections.emptyMap());
+                for (var item : stopTracker.entrySet()) {
+                    String stopId = item.getKey();
+
+                    boolean hasFinished = true;
+
+                    for (Task task : item.getValue()) {
+                        hasFinished &= task.getStatus().equals(TaskStatus.PERFORMED);
+                    }
+
+                    if (hasFinished) {
+                        vehicleState.finished.add(stopId);
+                    }
+                }
             }
 
             for (Request request : submitted) {
@@ -251,6 +271,17 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
 
     private IdMap<Request, RequestEntry> requestEntries = new IdMap<>(Request.class);
 
+    private IdMap<DvrpVehicle, Map<String, List<Task>>> taskTrackers = new IdMap<>(DvrpVehicle.class);
+
+    private void trackTask(Id<DvrpVehicle> vehicleId, String stopId, Task task) {
+        if (stopId != null) {
+            taskTrackers //
+                    .computeIfAbsent(vehicleId, id -> new HashMap<>()) //
+                    .computeIfAbsent(stopId, id -> new LinkedList<>()) //
+                    .add(task);
+        }
+    }
+
     private void implement(Assignment assignment, double now) {
         // first, clear the schedules of vehicles that get things rearranged
         for (String vehicleId : assignment.stops.keySet()) {
@@ -302,6 +333,8 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
         }
 
         // next, reconstruct the schedules
+        taskTrackers.clear();
+
         for (var vehicleEntry : assignment.stops.entrySet()) {
             DvrpVehicle vehicle = fleet.getVehicles().get(Id.create(vehicleEntry.getKey(), DvrpVehicle.class));
             Schedule schedule = vehicle.getSchedule();
@@ -326,6 +359,7 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
                         }
 
                         tracker.divertPath(path);
+                        trackTask(vehicle.getId(), stop.id, currentTask);
                     } else if (currentTask instanceof StayTask stayTask && stayTask.getLink() != stopLink) {
                         // we need to add a new drive
                         final VrpPathWithTravelData path;
@@ -340,6 +374,7 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
                         schedule.addTask(driveTask);
 
                         currentTask = driveTask;
+                        trackTask(vehicle.getId(), stop.id, currentTask);
                     }
 
                     // insert a potential wait before the next stop
@@ -350,6 +385,8 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
                         DrtStayTask stayTask = taskFactory.createStayTask(vehicle, beginTime, endTime, stopLink);
                         schedule.addTask(stayTask);
                         currentTask = stayTask;
+
+                        trackTask(vehicle.getId(), stop.id, currentTask);
                     }
 
                     // insert the next stop
@@ -396,6 +433,8 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
 
                         schedule.addTask(stopTask);
                         currentTask = stopTask;
+
+                        trackTask(vehicle.getId(), stop.id, currentTask);
                     }
                 }
             } else {
