@@ -82,11 +82,17 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
         this.mode = mode;
     }
 
+    private double nextStep = Double.NEGATIVE_INFINITY;
+
     @Override
     public void notifyMobsimBeforeSimStep(@SuppressWarnings("rawtypes") MobsimBeforeSimStepEvent e) {
         if (!isFirstStep) {
-            Assignment assignment = update(e.getSimulationTime());
-            implement(assignment, e.getSimulationTime());
+            if (e.getSimulationTime() >= nextStep) {
+                Assignment assignment = update(e.getSimulationTime());
+                nextStep += assignment.waitFor;
+
+                implement(assignment, e.getSimulationTime());
+            }
         } else {
             isFirstStep = false;
         }
