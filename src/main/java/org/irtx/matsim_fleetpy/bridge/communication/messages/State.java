@@ -11,6 +11,9 @@ public class State extends AbstractMessage {
     public Map<String, String> pickedUp = new HashMap<>();
     public Map<String, String> droppedOff = new HashMap<>();
 
+    public Map<String, String> pickingUp = new HashMap<>();
+    public Map<String, String> droppingOff = new HashMap<>();
+
     static public class Vehicle {
         public String id;
 
