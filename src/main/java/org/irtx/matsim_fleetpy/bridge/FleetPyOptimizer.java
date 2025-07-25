@@ -155,6 +155,14 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
 
                         vehicleState.divergeLink = vehicleState.currentLink;
                         vehicleState.divergeTime = vehicleState.currentExitTime;
+
+                        for (Id<Request> requestId : stopTask.getPickupRequests().keySet()) {
+                            state.pickingUp.put(requestId.toString(), vehicle.getId().toString());
+                        }
+
+                        for (Id<Request> requestId : stopTask.getDropoffRequests().keySet()) {
+                            state.droppingOff.put(requestId.toString(), vehicle.getId().toString());
+                        }
                     } else if (DrtTaskBaseType.DRIVE.isBaseTypeOf(currentTask)) {
                         vehicleState.state = "drive";
 

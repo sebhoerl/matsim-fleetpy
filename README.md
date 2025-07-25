@@ -163,6 +163,8 @@ The `waitFor` attribute defines how long the simulation should continue (in simu
     "time": 7200.0,
     "pickedUp": { "req1": "veh1" },
     "droppedOff": { "req5": "veh10", "req7": "veh12" },
+    "pickingUp": { "req3": "veh15" },
+    "droppingOff": {},
     "vehicles": [
         { 
             "id": "veh1", 
@@ -188,7 +190,7 @@ The `waitFor` attribute defines how long the simulation should continue (in simu
 }
 ```
 
-First, a map of picked up and dropped off requests is given, including the vehicle that performed that action. Second, a list of vehicle states is given with their current location and the earliest point and time when the route of the vehicle can be diverted. Third, a list of *newly* submitted requests is given including their time constraints, origin, and destination.
+First, a map of picked up and dropped off requests is given, including the vehicle that performed that action. Also, requests that are currently (irreversibly) being picked up or dropped off at the time are indicated. Second, a list of vehicle states is given with their current location and the earliest point and time when the route of the vehicle can be diverted. Third, a list of *newly* submitted requests is given including their time constraints, origin, and destination.
 
 Each vehicle also indicates which stops have finished (driving there, ideling if necessary, performing the pickup/dropoff) in case identifiers have been defined for them.
 
