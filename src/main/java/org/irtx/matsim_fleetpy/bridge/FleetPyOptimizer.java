@@ -226,9 +226,9 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
                 requestState.originLink = drtRequest.getFromLink().getId().toString();
                 requestState.destinationLink = drtRequest.getToLink().getId().toString();
 
-                requestState.earliestPickupTime = drtRequest.getEarliestStartTime();
-                requestState.latestPickupTime = drtRequest.getLatestStartTime();
-                requestState.latestArrivalTime = drtRequest.getLatestArrivalTime();
+                requestState.earliestPickupTime = drtRequest.getConstraints().earliestStartTime();
+                requestState.latestPickupTime = drtRequest.getConstraints().latestStartTime();
+                requestState.latestArrivalTime = drtRequest.getConstraints().latestArrivalTime();
 
                 AcceptedDrtRequest acceptedRequest = AcceptedDrtRequest.createFromOriginalRequest(drtRequest);
                 requests.put(request.getId(), acceptedRequest);

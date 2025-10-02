@@ -12,17 +12,13 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <matsim.version>2025.0-PR3744</matsim.version>
+        <matsim.version>2026.0-2025w40</matsim.version>
     </properties>
 
     <repositories>
         <repository>
             <id>matsim</id>
             <url>https://repo.matsim.org/repository/matsim</url>
-        </repository>
-        <repository>
-            <id>453184403</id>
-            <url>https://github.com/matsim-org/alonso-mora.git</url>
         </repository>
     </repositories>
 

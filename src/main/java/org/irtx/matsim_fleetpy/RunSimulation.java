@@ -11,7 +11,7 @@ import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.population.Person;
 import org.matsim.api.core.v01.population.Population;
 import org.matsim.contrib.common.zones.systems.grid.square.SquareGridZoneSystemParams;
-import org.matsim.contrib.drt.optimizer.constraints.DefaultDrtOptimizationConstraintsSet;
+import org.matsim.contrib.drt.optimizer.constraints.DrtOptimizationConstraintsSetImpl;
 import org.matsim.contrib.drt.optimizer.insertion.DrtInsertionSearchParams;
 import org.matsim.contrib.drt.optimizer.insertion.extensive.ExtensiveInsertionSearchParams;
 import org.matsim.contrib.drt.routing.DrtRoute;
@@ -93,27 +93,27 @@ public class RunSimulation {
 		DvrpConfigGroup dvrpConfig = DvrpConfigGroup.get(config);
 
 		SquareGridZoneSystemParams grid = new SquareGridZoneSystemParams();
-		grid.cellSize = 400;
+		grid.setCellSize(400);
 
 		dvrpConfig.getTravelTimeMatrixParams().addParameterSet(grid);
-		dvrpConfig.getTravelTimeMatrixParams().maxNeighborDistance = 0;
+		dvrpConfig.getTravelTimeMatrixParams().setMaxNeighborDistance(0);
 
 		DrtConfigGroup drtConfig = new DrtConfigGroup();
 		MultiModeDrtConfigGroup.get(config).addParameterSet(drtConfig);
 
-		drtConfig.vehiclesFile = cmd.getOptionStrict("fleet-path");
-		drtConfig.stopDuration = 60.0;
+		drtConfig.setVehiclesFile(cmd.getOptionStrict("fleet-path"));
+		drtConfig.setStopDuration(60.0);
 
 		DrtInsertionSearchParams searchParams = new ExtensiveInsertionSearchParams();
 		drtConfig.addParameterSet(searchParams);
 
-		DefaultDrtOptimizationConstraintsSet constraints = (DefaultDrtOptimizationConstraintsSet) drtConfig
+		DrtOptimizationConstraintsSetImpl constraints = drtConfig
 				.addOrGetDrtOptimizationConstraintsParams()
 				.addOrGetDefaultDrtOptimizationConstraintsSet();
 
-		constraints.maxWaitTime = 300.0;
-		constraints.maxTravelTimeAlpha = 1.5;
-		constraints.maxTravelTimeBeta = 300.0;
+		constraints.setMaxWaitTime(300.0);
+		constraints.setMaxTravelTimeAlpha(1.5);
+		constraints.setMaxTravelTimeBeta(300.0);
 
 		DrtConfigs.adjustMultiModeDrtConfig(MultiModeDrtConfigGroup.get(config), config.scoring(), config.routing());
 
