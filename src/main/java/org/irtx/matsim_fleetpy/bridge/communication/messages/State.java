@@ -23,7 +23,7 @@ public class State extends AbstractMessage {
         public String divergeLink = null;
         public double divergeTime = Double.NEGATIVE_INFINITY;
 
-        public String state; // stay, stop, drive
+        public String state; // stay, stop, drive, inactive
 
         public List<String> finished = new LinkedList<>();
     }
