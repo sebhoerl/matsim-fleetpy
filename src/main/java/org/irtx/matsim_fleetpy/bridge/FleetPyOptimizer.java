@@ -301,10 +301,11 @@ public class FleetPyOptimizer implements DrtOptimizer, PassengerPickedUpEventHan
         for (String vehicleId : assignment.stops.keySet()) {
             DvrpVehicle vehicle = fleet.getVehicles().get(Id.create(vehicleId, DvrpVehicle.class));
             Schedule schedule = vehicle.getSchedule();
-            Task currentTask = schedule.getCurrentTask();
 
             Verify.verify(schedule.getStatus().equals(ScheduleStatus.STARTED),
                     "Sent instructions for inactive vehicle " + vehicleId);
+
+            Task currentTask = schedule.getCurrentTask();
 
             // book-keeping
             for (int i = currentTask.getTaskIdx() + 1; i < schedule.getTaskCount(); i++) {
